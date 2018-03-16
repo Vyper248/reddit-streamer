@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title></title>
+    <link rel="stylesheet" type="text/css" href="semantic.min.css">
+    <style>
+    
+        body {
+            padding: 20px;
+        }
+    
+        .threadContainer{
+            border: 1px solid black;
+            padding: 20px;
+            margin: 5px;
+            border-radius: 5px;
+        }
+        
+        .sub {
+            color: darkgray;
+        }
+        
+        .threadCount {
+            color: darkgray;
+            margin: 0px;
+        }
+        
+        h2 {
+            margin-bottom: 0px;
+        }
+        
+        h4 {
+            padding-top: 0px;
+            padding-bottom: 0px;
+            margin: 0px;
+        }
+        
+        a {
+            color: black;
+            text-decoration: none;
+        }
+        
+        #muteBtn {
+            float: right;
+            margin-top:15px;
+        }
+        
+        .ui.label {
+            margin: 5px;
+        }
+        
+        .closed {
+            height: 30px;
+            overflow: hidden;
+        }
+        
+        #comment.closed {
+            padding: 5px;
+            padding-left: 14px;
+        }
+        
+        .pointer {
+            cursor: pointer;
+        }
+        
+        .OP {
+            color: blue;
+        }
+        
+    </style>
+</head>
+
+<body>
+
+    <div class="ui center aligned container" ng-app="redditApp" ng-controller="myCtrl">
+        
+        <h2 class="ui heading">Reddit Streamer</h2>
+        <div class="threadCount">New threads: {{newItems()}}</div>
+        
+        <div class="ui grid">
+        
+            <div class="left aligned fourteen wide column">
+                
+                <div class="ui dropdown button">
+                  <input type="hidden" name="filters">
+                  <span class="text"><i class="search icon"></i>Search Subs</span>
+                  <div class="menu">
+                    <div class="ui icon search input">
+                        <i class="search icon"></i>
+                      <input type="text" placeholder="Search subs..." ng-model="searchText" ng-change="searchSubs()">
+                    </div>
+                    <div class="divider"></div>
+                    <div class="header">
+                      Subreddit
+                    </div>
+                    <div class="scrolling menu">
+                      <div class="item" ng-repeat="result in searchResults" data-value="{{result}}">
+                        {{result}}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="ui label" ng-repeat="sub in subArray">{{sub}}<i class="delete icon" ng-click="removeSub(sub)"></i></div>
+            </div>
+            
+            <div class=" right aligned two wide column">
+                <div class="ui checkbox" id="muteBtn">
+                    <input type="checkbox" ng-model="mute">
+                    <label>Mute?</label>
+                </div>
+            </div>
+        
+        </div>
+        
+       
+        
+        <div class="threadContainer ui left aligned segment" ng-repeat="thread in currentThreads" style="border-color: {{thread.colour}}" ng-click="removeColour(thread)">
+            <h4>
+                <a href="{{thread.url}}" target="_blank">
+                    <span class="sub">{{thread.sub}}</span> - {{thread.title}}
+                </a>
+            </h4>
+            <p class="sub">{{thread.domain}} - {{thread.author}}</p>
+            <p>{{thread.description}}</p>
+            <a  target="_blank" class="sub pointer" ng-click="showComments(thread)">{{thread.numberComments}} Comments</a> - 
+            <a href="http://www.reddit.com{{thread.comments}}" target="_blank" class="sub">Open on Reddit</a>
+        </div>
+        
+        
+        <div class="ui longer special modal">
+          <div class="header" id="title">Header</div>
+          <div class="scrolling content" id="comments">
+              
+          </div>
+          <div class="actions">
+            <div class="ui black deny button">
+              Close
+            </div>
+          </div>
+        </div>
+        
+    </div>
+    
+ 	
+    <script src="jquery.min.js"></script>
+    <script src="angular.min.js"></script>
+    <script src="semantic.min.js"></script>
+    <script src="howler/howler.min.js"></script>
+    <script>
+        
+         
+    
+        var sound = new Howl({
+            src: ['howler/squiggle.mp3'],
+            volume: 0.25,
+        });
+        
+        var app = angular.module('redditApp', []);
+        app.controller('myCtrl', function($scope) {  
+             $('.ui.dropdown').dropdown({
+                onChange: function(value, text){
+                    if (value && $scope.subAlreadyAdded(value) === false){
+                        $scope.subs += '+'+value;
+                        $scope.subArray.push(value);
+                        localStorage.setItem('subs', $scope.subs);
+                        $scope.$apply();
+                        $('.ui.dropdown').dropdown('set text', '<i class="search icon"></i>Search Subs');
+                    } else {
+                        $('.ui.dropdown').dropdown('set text', '<i class="search icon"></i>Search Subs');
+                    }                    
+                }
+            });  
+                        
+            //save users preference of subs to watch
+            $scope.subs = localStorage.subs;
+            if ($scope.subs === undefined) $scope.subs = 'All';
+            $scope.subArray = $scope.subs.split('+');
+            
+            $scope.removeSub = function(sub){
+                $scope.subArray.splice($scope.subArray.indexOf(sub), 1);
+                if ($scope.subArray.length === 0) $scope.subArray = ['All'];
+                $scope.subs = $scope.subArray.join('+');
+                $scope.updateStorage();
+            }
+            
+            $scope.subAlreadyAdded = function(sub){
+                if ($scope.subArray.indexOf(sub) !== -1) return true;
+                else return false;
+            }
+            
+            //update local storage if user changes subs selection
+            $scope.updateStorage = function(){
+                localStorage.setItem('subs', $scope.subs);
+            };
+            
+            //storage of items already seen, so they don't turn red again
+            let clickedArray = localStorage.clicked;
+            if (clickedArray === undefined) $scope.clickedOn = [];
+            else $scope.clickedOn = clickedArray.split(',');
+            
+            //remove red outline when user clicks on a thread
+            $scope.removeColour = function(thread){
+                if (thread.colour !== ''){
+                    thread.colour = '';
+                    $scope.clickedOn.push(thread.id);
+                    localStorage.setItem('clicked', $scope.clickedOn.join(','));
+                }
+            }
+            
+            //return number of new items
+            $scope.newItems = function(){
+                let newItems = $scope.currentThreads.filter((thread) => thread.colour !== '');
+                if (newItems !== undefined) {
+                    return newItems.length;
+                }
+                return 0;
+            }
+            
+            //open modal view with comments
+            $scope.currentComments = [];
+            $scope.currentThread = {};
+            $scope.showComments = function(thread){
+                let url = "http://www.reddit.com/r/"+thread.sub+"/"+thread.id+".json";
+                $.get(url, function(data){
+                    let comments = data[1].data.children;
+                    $('#comments').html("");
+                    //top level comments
+                    addComments(comments, '#comments');
+                    $('#title').html("<span class='sub'>"+thread.sub+"</span> - "+thread.title+"<br>"+"<h4 class='sub'>"+thread.author+"</h4>");
+                    $('.ui.longer.modal').modal({centered: false}).modal('show');
+                });
+            }
+            
+            //recursive function that goes through comment children and adds them to the comment div
+            function addLowerComments(upperComment, div){
+                let replies = upperComment.replies;
+                if (replies){
+                    let comments = replies.data.children;
+                    addComments(comments, div);
+                }
+            }
+            
+            let test = function(){
+                console.log('test');
+            }
+            
+            //sorts and adds comments from array
+            function addComments(comments, div){
+                comments.sort((a,b) => b.data.created - a.data.created);
+                comments.forEach((comment) => {
+                    let data = comment.data;
+                    let text = data.body_html;
+                    let author = data.author;
+                    let html = $.parseHTML(text)[0].data;
+                    let commentDiv = $('<div class="ui segment" id="comment">').html(html).appendTo(div);
+                    
+                    let commentHeader = $('<h4 class="sub">').prependTo(commentDiv);
+                    let closeComment = $("<span onclick='closeComment(this)' class='pointer'>").text('[-] ').prependTo(commentHeader);
+                    let authorSpan = $("<span>").text(author).appendTo(commentHeader);
+                    if (data.is_submitter) authorSpan.addClass('OP');
+                    addLowerComments(data, commentDiv);
+                });
+            }
+            
+            //search results
+            let timer;
+            $scope.searchResults = [''];
+            $scope.searchSubs = function(){
+                if (timer) clearTimeout(timer);
+                timer = setTimeout(function(){
+                    timer = undefined;
+                    $.getJSON('https://www.reddit.com/subreddits/search.json?q='+$scope.searchText, function(data){
+                        $scope.searchResults = data.data.children.map((item) => item.data.display_name);
+                        $scope.$apply();
+                    });
+                }, 500);
+            };
+            $scope.searchText = '';
+            
+            //array to store threads
+            $scope.currentThreads = [];
+            $scope.mute = true;
+            
+            //set interval for getting new data, currently every second
+            setInterval(()=>{
+                getNewData();
+            }, 5000);
+            
+            getNewData();
+            
+            //get new data from reddit in JSON format
+            function getNewData(){
+
+                $.getJSON('https://www.reddit.com/r/'+$scope.subs+'/new.json',function(data){
+                    //threads is within data.children (array)
+                    let addedNew = false;
+                    let threads = data.data.children;
+                    
+                    //for each thread, get desired data and create an object
+                    threads.forEach((thread) => {
+                        let data = thread.data;
+                        let author = data.author;
+                        let id = data.id;
+                        let created = data.created;
+                        let title = data.title;
+                        let description = data.selftext;
+                        if (description) description = $.parseHTML(description)[0].data;
+                        let url = data.url;
+                        let sub = data.subreddit;
+                        let comments = data.permalink;
+                        let domain = data.domain;
+                        let numberComments = data.num_comments;
+                        let obj = {id, author, created, title, description, url, sub, comments, domain, numberComments, colour: 'red'};
+                        if ($scope.clickedOn.indexOf(id) !== -1) obj.colour = '';
+                        if (checkExists(obj) === false){
+                            //console.log(obj, " doesn't exist");
+                            $scope.currentThreads.unshift(obj);
+                            if ($scope.currentThreads.length > 75) $scope.currentThreads.pop();
+                            addedNew = true;
+                        } else {
+                            $scope.currentThreads.find((thread) => thread.id === id).numberComments = numberComments;
+                        }
+                    });
+                    
+                    //if found a new thread, then sort array, play a sound and update Angular
+                    if (addedNew){
+                        $scope.currentThreads.sort((a,b) => b.created - a.created);
+                        $scope.$apply();
+                        if ($scope.mute === false){
+                            sound.play();
+                        }
+                    }
+                    
+                    
+                });
+            }
+            
+            //check if a thread already exists in the array
+            function checkExists(obj){
+                let exists = false;
+                let test = $scope.currentThreads.find((thread) => thread.id == obj.id);
+                if (test !== undefined) exists = true;
+                return exists;
+            }
+        });
+        
+        let closeComment = function(e){
+            if ($(e).text() === '[-] ') $(e).text('[+] ');
+            else $(e).text('[-] ');
+            $(e).parent().parent().toggleClass('closed');
+        }
+
+        
+    </script>
+    
+</body>
+
+</html>
+
