@@ -3,8 +3,8 @@ let app = express();
 
 app.use(express.static(__dirname+'/public'));
 
-app.get('/', function(req, res){
-    res.send('Hello');
+app.get('*', function(req, res){
+    res.redirect('redditStreamer.html');
 });
 
 app.listen(34862, function(){
