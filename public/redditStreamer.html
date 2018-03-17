@@ -97,8 +97,8 @@
 
 	<div class="ui fixed menu">
 		<div class="centered menu">
-			<a class="item" data-multi="All" ng-click="selectMulti('All')" ng-style="checkMulti('All')">All</a>
-			<a class="item" ng-repeat="(key, value) in multis" data-multi="{{value}}" ng-click="selectMulti(key)" ng-style="checkMulti(key)">{{key}}</a>
+			<a class="item" ng-click="selectMulti('All')" ng-style="checkMulti('All')">All</a>
+			<a class="item" ng-repeat="multi in multis" ng-click="selectMulti(multi.name)" ng-style="checkMulti(multi.name)">{{multi.name}}</a>
 			
 		</div>
 		<a class="right item" id="editMultiBtn" ng-click="editMultis()"><i class="cog icon"></i></a>
@@ -176,11 +176,11 @@
           <div class="header" id="title">Groups</div>
           <div class="scrolling content" id="multis">
 			  <div class="ui segments">
-				  <div class="ui segment" ng-repeat="(key, value) in multis">
+				  <div class="ui segment" ng-repeat="multi in multis">
 				  	<div class="ui input">
-						<input type="text" value="{{key}}"/>
+						<input type="text" ng-value="multi.name" ng-blur="editMultiName(multi, $event)"/>
 					</div>
-					<div class="ui right floated button"><i class="delete icon" style="margin: 0px;!important"></i></div>
+					<div class="ui right floated button" ng-click="deleteMulti(multi)"><i class="delete icon" style="margin: 0px;!important"></i></div>
 				  </div>
 			  </div>
 			  <div class="ui blue button" ng-click="addMulti()">Add New</div>
@@ -227,9 +227,11 @@
             });  
 			
 			//variables for multis
+			//localStorage.removeItem('currentMulti');
+			//localStorage.removeItem('multis');
 			$scope.currentMulti = localStorage.currentMulti || 'All';
 			$scope.multis = localStorage.multis;
-			if ($scope.multis === undefined) $scope.multis = JSON.stringify({Subs: ['All'], Playstation: ['PSVR', 'PS4']});
+			if ($scope.multis === undefined) $scope.multis = JSON.stringify([{name: 'Subs', array: ['All']}, {name: 'Playstation', array: ['PSVR','PS4']}]);
 			$scope.multis = JSON.parse($scope.multis);
 			
 			//function to get style for currentMulti
@@ -240,10 +242,6 @@
 					return {};
 				}
 			}
-                        
-            //save users preference of subs to watch
-            $scope.subArray = $scope.multis[$scope.currentMulti];
-			$scope.subs = $scope.subArray.join('+');
             
 			//remove sub from array and update storage
             $scope.removeSub = function(sub){
@@ -270,12 +268,12 @@
 			$scope.selectMulti = function(multi){
 				if (multi === 'All') {
 					$scope.subArray = [];
-					Object.keys($scope.multis).forEach((multi) => $scope.subArray.push(...$scope.multis[multi]));
+					$scope.multis.forEach((multi) => $scope.subArray.push(...multi.array));
 					$scope.subs = $scope.subArray.join('+');
 					$scope.currentMulti = 'All';
 					$scope.updateStorage();
 				} else {
-					$scope.subArray = $scope.multis[multi];
+					$scope.subArray = $scope.multis.find((group) => group.name === multi).array;
 					$scope.subs = $scope.subArray.join('+');
 					$scope.currentMulti = multi;
 					$scope.updateStorage();
@@ -284,12 +282,31 @@
 				getNewData();
 			}
 			
+			//setup initial variables
+			$scope.selectMulti($scope.currentMulti);
+			
 			$scope.editMultis = function(){
 				$('#multiModal').modal('show');
 			};
 			
+			//edit the name of a multi
+			$scope.editMultiName = function(multi, event){
+				let newValue = event.currentTarget.value;
+				if (newValue.length === 0) newValue = 'Empty';
+				if ($scope.currentMulti === multi.name) $scope.currentMulti = newValue;
+				multi.name = newValue;
+				$scope.updateStorage();
+			}
+			
+			//add a new multi with default values
 			$scope.addMulti = function(){
-				
+				$scope.multis.push({name: 'New', array: []});
+			}
+			
+			$scope.deleteMulti = function(multi){
+				let index = $scope.multis.indexOf(multi);
+				$scope.multis.splice(index, 1);
+				$scope.updateStorage();
 			}
             
             //storage of items already seen, so they don't turn red again
