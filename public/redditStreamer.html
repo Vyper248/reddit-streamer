@@ -67,13 +67,37 @@
         .OP {
             color: blue;
         }
+		
+		body {
+			padding-top: 60px;
+		}
+		
+		.ui.menu .centered.menu {
+			margin: auto;
+			border-left: 1px solid rgba(34,36,38,.1);
+		}
+		
+		.multiBtn {
+			cursor: pointer;
+		}
+		
+		.highlighted {
+			color: blue;
+		}
         
     </style>
 </head>
 
-<body>
+<body ng-app="redditApp" ng-controller="myCtrl">
 
-    <div class="ui center aligned container" ng-app="redditApp" ng-controller="myCtrl">
+	<div class="ui fixed menu">
+		<div class="centered menu">
+			<a class="centered item multiBtn" data-multi="All" ng-click="selectMulti('All')" ng-style="checkMulti('All')">All</a>
+			<a class="centered item multiBtn" ng-repeat="(key, value) in multis" data-multi="{{value}}" ng-click="selectMulti(key)" ng-style="checkMulti(key)">{{key}}</a>
+		</div>
+	</div>
+
+    <div class="ui center aligned container">
         
         <h2 class="ui heading">Reddit Streamer</h2>
         <div class="threadCount">New threads: {{newItems()}}</div>
@@ -159,12 +183,14 @@
         
         var app = angular.module('redditApp', []);
         app.controller('myCtrl', function($scope) {  
+			
+			//function to add sub to array
              $('.ui.dropdown').dropdown({
                 onChange: function(value, text){
                     if (value && $scope.subAlreadyAdded(value) === false){
                         $scope.subs += '+'+value;
                         $scope.subArray.push(value);
-                        localStorage.setItem('subs', $scope.subs);
+						$scope.updateStorage();
                         $scope.$apply();
                         $('.ui.dropdown').dropdown('set text', '<i class="search icon"></i>Search Subs');
                     } else {
@@ -172,12 +198,27 @@
                     }                    
                 }
             });  
+			
+			//variables for multis
+			$scope.currentMulti = localStorage.currentMulti || 'All';
+			$scope.multis = localStorage.multis;
+			if ($scope.multis === undefined) $scope.multis = JSON.stringify({Subs: ['All'], Playstation: ['PSVR', 'PS4']});
+			$scope.multis = JSON.parse($scope.multis);
+			
+			//function to get style for currentMulti
+			$scope.checkMulti = function(multi){
+				if (multi === $scope.currentMulti){
+					return {backgroundColor: 'lightgray'};
+				} else {
+					return {};
+				}
+			}
                         
             //save users preference of subs to watch
-            $scope.subs = localStorage.subs;
-            if ($scope.subs === undefined) $scope.subs = 'All';
-            $scope.subArray = $scope.subs.split('+');
+            $scope.subArray = $scope.multis[$scope.currentMulti];
+			$scope.subs = $scope.subArray.join('+');
             
+			//remove sub from array and update storage
             $scope.removeSub = function(sub){
                 $scope.subArray.splice($scope.subArray.indexOf(sub), 1);
                 if ($scope.subArray.length === 0) $scope.subArray = ['All'];
@@ -185,6 +226,7 @@
                 $scope.updateStorage();
             }
             
+			//check if sub is already added
             $scope.subAlreadyAdded = function(sub){
                 if ($scope.subArray.indexOf(sub) !== -1) return true;
                 else return false;
@@ -193,7 +235,27 @@
             //update local storage if user changes subs selection
             $scope.updateStorage = function(){
                 localStorage.setItem('subs', $scope.subs);
+				localStorage.setItem('multis', JSON.stringify($scope.multis));
+				localStorage.setItem('currentMulti', $scope.currentMulti);
             };
+			
+			//when user selects a multi, switch current sub array to that one
+			$scope.selectMulti = function(multi){
+				if (multi === 'All') {
+					$scope.subArray = [];
+					Object.keys($scope.multis).forEach((multi) => $scope.subArray.push(...$scope.multis[multi]));
+					$scope.subs = $scope.subArray.join('+');
+					$scope.currentMulti = 'All';
+					$scope.updateStorage();
+				} else {
+					$scope.subArray = $scope.multis[multi];
+					$scope.subs = $scope.subArray.join('+');
+					$scope.currentMulti = multi;
+					$scope.updateStorage();
+				}
+				$scope.currentThreads = [];
+				getNewData();
+			}
             
             //storage of items already seen, so they don't turn red again
             let clickedArray = localStorage.clicked;
