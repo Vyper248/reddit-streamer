@@ -84,6 +84,11 @@
 		.highlighted {
 			color: blue;
 		}
+		
+		#editMultiBtn {
+			position: absolute;
+			right: 0px;
+		}
         
     </style>
 </head>
@@ -92,9 +97,11 @@
 
 	<div class="ui fixed menu">
 		<div class="centered menu">
-			<a class="centered item multiBtn" data-multi="All" ng-click="selectMulti('All')" ng-style="checkMulti('All')">All</a>
-			<a class="centered item multiBtn" ng-repeat="(key, value) in multis" data-multi="{{value}}" ng-click="selectMulti(key)" ng-style="checkMulti(key)">{{key}}</a>
+			<a class="item" data-multi="All" ng-click="selectMulti('All')" ng-style="checkMulti('All')">All</a>
+			<a class="item" ng-repeat="(key, value) in multis" data-multi="{{value}}" ng-click="selectMulti(key)" ng-style="checkMulti(key)">{{key}}</a>
+			
 		</div>
+		<a class="right item" id="editMultiBtn" ng-click="editMultis()"><i class="cog icon"></i></a>
 	</div>
 
     <div class="ui center aligned container">
@@ -153,10 +160,30 @@
         </div>
         
         
-        <div class="ui longer special modal">
+        <div class="ui longer special modal" id="commentModal">
           <div class="header" id="title">Header</div>
           <div class="scrolling content" id="comments">
               
+          </div>
+          <div class="actions">
+            <div class="ui black deny button">
+              Close
+            </div>
+          </div>
+        </div>
+		
+		<div class="ui longer special mini modal" id="multiModal">
+          <div class="header" id="title">Groups</div>
+          <div class="scrolling content" id="multis">
+			  <div class="ui segments">
+				  <div class="ui segment" ng-repeat="(key, value) in multis">
+				  	<div class="ui input">
+						<input type="text" value="{{key}}"/>
+					</div>
+					<div class="ui right floated button"><i class="delete icon" style="margin: 0px;!important"></i></div>
+				  </div>
+			  </div>
+			  <div class="ui blue button" ng-click="addMulti()">Add New</div>
           </div>
           <div class="actions">
             <div class="ui black deny button">
@@ -256,6 +283,14 @@
 				$scope.currentThreads = [];
 				getNewData();
 			}
+			
+			$scope.editMultis = function(){
+				$('#multiModal').modal('show');
+			};
+			
+			$scope.addMulti = function(){
+				
+			}
             
             //storage of items already seen, so they don't turn red again
             let clickedArray = localStorage.clicked;
@@ -291,7 +326,7 @@
                     //top level comments
                     addComments(comments, '#comments');
                     $('#title').html("<span class='sub'>"+thread.sub+"</span> - "+thread.title+"<br>"+"<h4 class='sub'>"+thread.author+"</h4>");
-                    $('.ui.longer.modal').modal({centered: false}).modal('show');
+                    $('#commentModal').modal({centered: false}).modal('show');
                 });
             }
             
