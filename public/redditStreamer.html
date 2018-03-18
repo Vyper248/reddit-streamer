@@ -10,6 +10,7 @@
 <body ng-app="redditApp" ng-controller="myCtrl">
 
 	<div class="ui fixed menu">
+		<a class="left item" id="markReadBtn" ng-click="markAllRead()"><i class="thumbs up icon"></i></a>
 		<div class="centered menu">
 			<a class="item" ng-click="selectMulti('All')" ng-style="checkMulti('All')">All</a>
 			<a class="item" ng-repeat="multi in multis" ng-click="selectMulti(multi.name)" ng-style="checkMulti(multi.name)">{{multi.name}}</a>
@@ -21,7 +22,7 @@
     <div class="ui center aligned container">
         
         <h2 class="ui heading">Reddit Streamer</h2>
-        <div class="threadCount">New threads: {{newItems()}}</div>
+        <div class="threadCount">New threads: {{newItems()}}/{{currentThreads.length}}</div>
         
         <div class="ui grid">
         

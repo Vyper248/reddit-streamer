@@ -171,6 +171,10 @@
             return 0;
         }
         
+        $scope.markAllRead = function(){
+            $scope.currentThreads.forEach((thread) => $scope.removeColour(thread));
+        }
+        
         //Comment functions ----------------------------------------------------
         
         //open modal view with comments

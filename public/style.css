@@ -81,3 +81,8 @@ body {
     position: absolute;
     right: 0px;
 }
+
+#markReadBtn {
+    position: absolute;
+    left: 0px;
+}
