@@ -14,7 +14,7 @@
         //variables for multis
         $scope.currentMulti = localStorage.currentMulti || 'All';
         $scope.multis = localStorage.multis;
-        if ($scope.multis === undefined) $scope.multis = JSON.stringify([{name: 'Subs', array: ['All']}, {name: 'Playstation', array: ['PSVR','PS4']}]);
+        if ($scope.multis === undefined) $scope.multis = JSON.stringify([{name: 'Playstation', array: ['PSVR','PS4']}]);
         $scope.multis = JSON.parse($scope.multis);
         
         //storage of items already seen, so they don't turn red again
