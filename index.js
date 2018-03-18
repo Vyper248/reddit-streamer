@@ -7,6 +7,8 @@ app.get('*', function(req, res){
     res.redirect('redditStreamer.html');
 });
 
-app.listen(34862, function(){
-    console.log('Listening on port 34862');
+var port = process.env.PORT || 34862;
+var ip = process.env.IP;
+app.listen(port, ip, function(){
+    console.log('Listening on port '+port);
 });
