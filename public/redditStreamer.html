@@ -113,7 +113,7 @@
         
             <div class="left aligned fourteen wide column">
                 
-                <div class="ui dropdown button">
+                <div class="ui dropdown button" ng-class="searchDisabled()">
                   <input type="hidden" name="filters">
                   <span class="text"><i class="search icon"></i>Search Subs</span>
                   <div class="menu">
@@ -200,8 +200,6 @@
     <script src="semantic.min.js"></script>
     <script src="howler/howler.min.js"></script>
     <script>
-        
-         
     
         var sound = new Howl({
             src: ['howler/squiggle.mp3'],
@@ -210,6 +208,39 @@
         
         var app = angular.module('redditApp', []);
         app.controller('myCtrl', function($scope) {  
+			
+			//setup variables----------------------------------------
+			
+			//cache for storing current threads
+			$scope.threadCache = {};  
+			
+			//variables for multis
+			$scope.currentMulti = localStorage.currentMulti || 'All';
+			$scope.multis = localStorage.multis;
+			if ($scope.multis === undefined) $scope.multis = JSON.stringify([{name: 'Subs', array: ['All']}, {name: 'Playstation', array: ['PSVR','PS4']}]);
+			$scope.multis = JSON.parse($scope.multis);
+			
+			//storage of items already seen, so they don't turn red again
+            let clickedArray = localStorage.clicked;
+            if (clickedArray === undefined) $scope.clickedOn = [];
+            else $scope.clickedOn = clickedArray.split(',');
+			
+			//variables to store current array of comments and current thread, used for comments modal
+			$scope.currentComments = [];
+            $scope.currentThread = {};
+			
+			//search result variables
+            let timer;
+            $scope.searchResults = [''];
+			
+			//variable linked to sub search input
+			$scope.searchText = '';
+            
+            //array to store threads
+            $scope.currentThreads = [];
+            $scope.mute = true;
+			
+			//functions ---------------------------------------------
 			
 			//function to add sub to array
              $('.ui.dropdown').dropdown({
@@ -224,16 +255,8 @@
                         $('.ui.dropdown').dropdown('set text', '<i class="search icon"></i>Search Subs');
                     }                    
                 }
-            });  
-			
-			//variables for multis
-			//localStorage.removeItem('currentMulti');
-			//localStorage.removeItem('multis');
-			$scope.currentMulti = localStorage.currentMulti || 'All';
-			$scope.multis = localStorage.multis;
-			if ($scope.multis === undefined) $scope.multis = JSON.stringify([{name: 'Subs', array: ['All']}, {name: 'Playstation', array: ['PSVR','PS4']}]);
-			$scope.multis = JSON.parse($scope.multis);
-			
+            });
+
 			//function to get style for currentMulti
 			$scope.checkMulti = function(multi){
 				if (multi === $scope.currentMulti){
@@ -241,6 +264,11 @@
 				} else {
 					return {};
 				}
+			}
+			
+			$scope.searchDisabled = function(){
+				if ($scope.currentMulti === 'All') return 'disabled';
+				else return '';
 			}
             
 			//remove sub from array and update storage
@@ -266,6 +294,7 @@
 			
 			//when user selects a multi, switch current sub array to that one
 			$scope.selectMulti = function(multi){
+				$scope.threadCache[$scope.currentMulti] = $scope.currentThreads;
 				if (multi === 'All') {
 					$scope.subArray = [];
 					$scope.multis.forEach((multi) => $scope.subArray.push(...multi.array));
@@ -278,7 +307,7 @@
 					$scope.currentMulti = multi;
 					$scope.updateStorage();
 				}
-				$scope.currentThreads = [];
+				$scope.currentThreads = $scope.threadCache[multi] || [];
 				getNewData();
 			}
 			
@@ -309,11 +338,6 @@
 				$scope.updateStorage();
 			}
             
-            //storage of items already seen, so they don't turn red again
-            let clickedArray = localStorage.clicked;
-            if (clickedArray === undefined) $scope.clickedOn = [];
-            else $scope.clickedOn = clickedArray.split(',');
-            
             //remove red outline when user clicks on a thread
             $scope.removeColour = function(thread){
                 if (thread.colour !== ''){
@@ -333,8 +357,6 @@
             }
             
             //open modal view with comments
-            $scope.currentComments = [];
-            $scope.currentThread = {};
             $scope.showComments = function(thread){
                 let url = "http://www.reddit.com/r/"+thread.sub+"/"+thread.id+".json";
                 $.get(url, function(data){
@@ -356,10 +378,6 @@
                 }
             }
             
-            let test = function(){
-                console.log('test');
-            }
-            
             //sorts and adds comments from array
             function addComments(comments, div){
                 comments.sort((a,b) => b.data.created - a.data.created);
@@ -378,9 +396,7 @@
                 });
             }
             
-            //search results
-            let timer;
-            $scope.searchResults = [''];
+            //gets array of subs which match search string
             $scope.searchSubs = function(){
                 if (timer) clearTimeout(timer);
                 timer = setTimeout(function(){
@@ -391,11 +407,7 @@
                     });
                 }, 500);
             };
-            $scope.searchText = '';
             
-            //array to store threads
-            $scope.currentThreads = [];
-            $scope.mute = true;
             
             //set interval for getting new data, currently every second
             setInterval(()=>{
@@ -406,7 +418,7 @@
             
             //get new data from reddit in JSON format
             function getNewData(){
-
+				if ($scope.subs.length === 0) return;
                 $.getJSON('https://www.reddit.com/r/'+$scope.subs+'/new.json',function(data){
                     //threads is within data.children (array)
                     let addedNew = false;
