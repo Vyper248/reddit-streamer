@@ -121,7 +121,7 @@
                 $scope.updateStorage();
             }
             $scope.currentThreads = $scope.threadCache[multi] || [];
-            getNewData();
+            getNewData(75);
         }
         
         //setup initial variables
@@ -242,17 +242,17 @@
         
         //set interval for getting new data, currently every second
         setInterval(()=>{
-            getNewData();
+            getNewData(10);
         }, 5000);
         
         //Initial gather
-        getNewData();
+        getNewData(75);
         
         //get new data from reddit in JSON format
-        function getNewData(){
+        function getNewData(limit){
             if ($scope.subs.length === 0) return;
             let currentSubs = $scope.subs;
-            $.getJSON('https://www.reddit.com/r/'+$scope.subs+'/new.json',function(data){
+            $.getJSON('https://www.reddit.com/r/'+$scope.subs+'/new.json?limit='+limit,function(data){
                 //just in case user switches while gathering new list of threads
                 if ($scope.subs !== currentSubs) return;
                 //threads is within data.children (array)
