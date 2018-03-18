@@ -88,6 +88,10 @@ body {
     color: blue;
 }
 
+.ui.segment {
+    overflow: hidden;
+}
+
 #editMultiBtn {
     position: absolute;
     right: 0px;
