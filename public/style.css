@@ -52,6 +52,17 @@ a {
     padding-left: 14px;
 }
 
+#threadBody {
+    font-weight: normal;
+    font-size: 0.8em;
+    margin-top:10px;
+}
+
+#threadBody a {
+    color: blue;
+    font-weight: bold;
+}
+
 .pointer {
     cursor: pointer;
 }

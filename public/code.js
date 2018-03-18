@@ -186,6 +186,10 @@
                 //top level comments
                 addComments(comments, '#comments');
                 $('#commentTitle').html("<span class='sub'>"+thread.sub+"</span> - "+thread.title+"<br>"+"<h4 class='sub'>"+thread.author+"</h4>");
+                let text_html = $.parseHTML(thread.description_html);
+                if (text_html) text_html = text_html[0].data;
+                else text_html = '';
+                $('#threadBody').html(text_html);
                 $('#commentModal').modal({centered: false}).modal('show');
             });
         }
@@ -247,6 +251,7 @@
                         created: data.created,
                         title: data.title,
                         description: data.selftext,
+                        description_html: data.selftext_html,
                         url: data.url,
                         sub: data.subreddit,
                         comments: data.permalink,
