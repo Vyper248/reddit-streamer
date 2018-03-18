@@ -202,7 +202,11 @@
                 $('#threadBody').html(text_html);
                 if (hasMedia) $('#threadBody').addClass('centered');
                 else $('#threadBody').removeClass('centered');
-                $('#commentModal').modal({centered: false}).modal('show');
+                $('#commentModal').modal({centered: false}).modal({
+                    onHide: function(){
+                        $('#threadBody').html('');
+                    }
+                }).modal('show');
             });
         }
         
@@ -257,6 +261,7 @@
                 //for each thread, get desired data and create an object
                 threads.forEach((thread) => {
                     let data = thread.data;
+                    //console.log(data);
                     let obj = {
                         id: data.id,
                         author: data.author,
@@ -269,7 +274,7 @@
                         comments: data.permalink,
                         domain: data.domain,
                         numberComments: data.num_comments,
-                        media: data.secure_media_embed,
+                        media: data.media_embed,
                         colour: 'red'
                     };
                     if ($scope.clickedOn.indexOf(obj.id) !== -1) obj.colour = '';
