@@ -63,6 +63,10 @@ a {
     font-weight: bold;
 }
 
+#threadBody.centered {
+    text-align: center;
+}
+
 .pointer {
     cursor: pointer;
 }

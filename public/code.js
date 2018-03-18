@@ -187,9 +187,21 @@
                 addComments(comments, '#comments');
                 $('#commentTitle').html("<span class='sub'>"+thread.sub+"</span> - "+thread.title+"<br>"+"<h4 class='sub'>"+thread.author+"</h4>");
                 let text_html = $.parseHTML(thread.description_html);
-                if (text_html) text_html = text_html[0].data;
-                else text_html = '';
+                //check if thread contains text or media and parse
+                let hasMedia = false;
+                if (text_html) {
+                    text_html = text_html[0].data;
+                } else {
+                    if (thread.media.content !== undefined){
+                        text_html = $.parseHTML(thread.media.content)[0].data;
+                        hasMedia = true;
+                    } else {
+                        text_html = '';
+                    }
+                }
                 $('#threadBody').html(text_html);
+                if (hasMedia) $('#threadBody').addClass('centered');
+                else $('#threadBody').removeClass('centered');
                 $('#commentModal').modal({centered: false}).modal('show');
             });
         }
@@ -257,6 +269,7 @@
                         comments: data.permalink,
                         domain: data.domain,
                         numberComments: data.num_comments,
+                        media: data.secure_media_embed,
                         colour: 'red'
                     };
                     if ($scope.clickedOn.indexOf(obj.id) !== -1) obj.colour = '';
