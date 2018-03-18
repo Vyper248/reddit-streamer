@@ -202,10 +202,11 @@
                 $('#threadBody').html(text_html);
                 if (hasMedia) $('#threadBody').addClass('centered');
                 else $('#threadBody').removeClass('centered');
-                $('#commentModal').modal({centered: false}).modal({
+                $('#commentModal').modal({
+                    centered: false,
                     onHide: function(){
                         $('#threadBody').html('');
-                    }
+                    },
                 }).modal('show');
             });
         }
