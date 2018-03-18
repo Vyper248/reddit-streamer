@@ -128,7 +128,7 @@
         $scope.selectMulti($scope.currentMulti);
         
         $scope.editMultis = function(){
-            $('#multiModal').modal('show');
+            $('#multiModal').modal({centered: false}).modal('show');
         };
         
         //edit the name of a multi
@@ -185,7 +185,7 @@
                 $('#comments').html("");
                 //top level comments
                 addComments(comments, '#comments');
-                $('#title').html("<span class='sub'>"+thread.sub+"</span> - "+thread.title+"<br>"+"<h4 class='sub'>"+thread.author+"</h4>");
+                $('#commentTitle').html("<span class='sub'>"+thread.sub+"</span> - "+thread.title+"<br>"+"<h4 class='sub'>"+thread.author+"</h4>");
                 $('#commentModal').modal({centered: false}).modal('show');
             });
         }
