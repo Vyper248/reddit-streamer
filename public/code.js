@@ -234,7 +234,7 @@
         
         //open modal view with comments
         $scope.showComments = function(thread){
-            let url = "http://www.reddit.com/r/"+thread.sub+"/"+thread.id+".json";
+            let url = "https://www.reddit.com/r/"+thread.sub+"/"+thread.id+".json";
             
             $('#commentTitle').html("<span class='sub'>"+thread.sub+"</span> - "+thread.title+"<br>"+"<h4 class='sub'>"+thread.author+"</h4>");
             let text_html = $.parseHTML(thread.description_html);
