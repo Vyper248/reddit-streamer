@@ -13,7 +13,7 @@
 		<a class="left item" id="markReadBtn" ng-click="markAllRead()"><i class="thumbs up icon"></i></a>
 		<div class="centered menu">
 			<a class="item" ng-click="selectMulti('All')" ng-style="checkMulti('All')">All</a>
-			<a class="item" ng-repeat="multi in multis" ng-click="selectMulti(multi.name)" ng-style="checkMulti(multi.name)">{{multi.name}}</a>
+			<a class="item" ng-repeat="multi in multis track by $index" ng-click="selectMulti(multi.name)" ng-style="checkMulti(multi.name)">{{multi.name}}</a>
 			
 		</div>
 		<a class="right item" id="editMultiBtn" ng-click="editMultis()"><i class="cog icon"></i></a>
@@ -74,41 +74,80 @@
             <a href="http://www.reddit.com{{thread.comments}}" target="_blank" class="sub">Open on Reddit</a>
         </div>
         
-        
-        <div class="ui longer special modal" id="commentModal">
-          <div class="header">
-			  <div id="commentTitle">Header</div>
-			  <div id="threadBody">Testing</div>
-		  </div>
-          <div class="scrolling content" id="comments">
-              
-          </div>
-          <div class="actions">
-            <div class="ui black deny button">
-              Close
-            </div>
-          </div>
-        </div>
 		
-		<div class="ui longer special mini modal" id="multiModal">
-          <div class="header">Groups</div>
-          <div class="scrolling content" id="multis">
-			  <div class="ui segments">
-				  <div class="ui segment" ng-repeat="multi in multis">
-				  	<div class="ui input">
-						<input type="text" ng-value="multi.name" ng-blur="editMultiName(multi, $event)"/>
+		<div class="ui longer special modal" id="commentModal">
+			<div class="header">
+				<div id="commentTitle">Header</div>
+				
+			</div>
+			<div class="scrolling content" id="comments5">
+				<div id="threadBody">Testing</div>
+				<div id="comments"></div>
+			</div>
+			<div class="actions">
+				<div class="ui black deny button">
+					Close
+				</div>
+			</div>
+		</div>
+		
+		<div class="ui longer special tiny modal" id="multiModal">
+			<div class="header">Menu</div>
+			<div class="scrolling content" id="multis">
+				
+				<div class="ui top attached tabular menu">
+					<a class="active item" data-tab="first">Groups</a>
+					<a class="item" data-tab="second">Filter Unwanted</a>
+					<a class="item" data-tab="third">Filter Wanted</a>
+				</div>
+				
+				<div class="ui bottom attached active tab segment" data-tab="first">
+					<div class="ui segments">
+						<div class="ui segment" ng-repeat="multi in multis track by $index">
+							<div class="ui input">
+								<input type="text" ng-value="multi.name" ng-blur="editMultiName(multi, $event)"/>
+							</div>
+							<div class="ui right floated button" ng-click="deleteMulti(multi)"><i class="delete icon" style="margin: 0px;!important"></i></div>
+						</div>
 					</div>
-					<div class="ui right floated button" ng-click="deleteMulti(multi)"><i class="delete icon" style="margin: 0px;!important"></i></div>
-				  </div>
-			  </div>
-			  <div class="ui blue button" ng-click="addMulti()">Add New</div>
-          </div>
-          <div class="actions">
-            <div class="ui black deny button">
-              Close
-            </div>
-          </div>
-        </div>
+					<div class="ui blue button" ng-click="addMulti()">Add New</div>
+				</div>
+				
+				<div class="ui bottom attached tab segment" data-tab="second">
+					<p>Any thread titles containing words added here won't be displayed.</p>
+					<div class="ui segments">
+						<div class="ui segment" ng-repeat="filter in filterUnwanted track by $index">
+							<div class="ui input">
+								<input type="text" ng-value="filter" ng-blur="editFilterUnwantedName(filter, $event)"/>
+							</div>
+							<div class="ui right floated button" ng-click="deleteFilterUnwanted(filter)"><i class="delete icon" style="margin: 0px;!important"></i></div>
+						</div>
+						<div class="ui segment" ng-if="filterUnwanted.length == 0">No Filters Added</div>
+					</div>
+					<div class="ui blue button" ng-click="addFilterUnwanted()">Add New</div>
+				</div>
+				
+				<div class="ui bottom attached tab segment" data-tab="third">
+					<p>Only thread titles containing words added here will be displayed.</p>
+					<div class="ui segments">
+						<div class="ui segment" ng-repeat="filter in filterWanted track by $index">
+							<div class="ui input">
+								<input type="text" ng-value="filter" ng-blur="editFilterWantedName(filter, $event)"/>
+							</div>
+							<div class="ui right floated button" ng-click="deleteFilterWanted(filter)"><i class="delete icon" style="margin: 0px;!important"></i></div>
+						</div>
+						<div class="ui segment" ng-if="filterWanted.length == 0">No Filters Added</div>
+					</div>
+					<div class="ui blue button" ng-click="addFilterWanted()">Add New</div>
+				</div>
+				
+			</div>
+			<div class="actions">
+				<div class="ui black deny button">
+					Close
+				</div>
+			</div>
+		</div>
         
     </div>
     

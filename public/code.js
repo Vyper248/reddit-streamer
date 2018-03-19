@@ -3,6 +3,8 @@
         volume: 0.25,
     });
     
+    $('.tabular.menu .item').tab();
+    
     var app = angular.module('redditApp', []);
     app.controller('myCtrl', function($scope) {  
         
@@ -37,6 +39,19 @@
         $scope.currentThreads = [];
         $scope.mute = true;
         
+        //array to store filters for unwanted threads - case insensitive
+        $scope.filterUnwanted = localStorage.filterUnwanted;
+        if ($scope.filterUnwanted === undefined) $scope.filterUnwanted = '[]';
+        $scope.filterUnwanted = JSON.parse($scope.filterUnwanted);
+        
+        //array to store filters for only wanted threads
+        $scope.filterWanted = localStorage.filterWanted;
+        if ($scope.filterWanted === undefined) $scope.filterWanted = '[]';
+        $scope.filterWanted = JSON.parse($scope.filterWanted);
+        
+        //variable to keep track of how much time has passed since last update
+        let firstTime = new Date();
+        
         //functions ---------------------------------------------------------------------------------------------
         
         //update local storage if user changes subs selection
@@ -44,6 +59,8 @@
             localStorage.setItem('subs', $scope.subs);
             localStorage.setItem('multis', JSON.stringify($scope.multis));
             localStorage.setItem('currentMulti', $scope.currentMulti);
+            localStorage.setItem('filterUnwanted', JSON.stringify($scope.filterUnwanted));
+            localStorage.setItem('filterWanted', JSON.stringify($scope.filterWanted));
         };
         
         //Adding and removing Subs ---------------------------------------------
@@ -138,18 +155,56 @@
             if ($scope.currentMulti === multi.name) $scope.currentMulti = newValue;
             multi.name = newValue;
             $scope.updateStorage();
-        }
+        };
         
         //add a new multi with default values
         $scope.addMulti = function(){
+            //console.log($scope.multis);
             $scope.multis.push({name: 'New', array: []});
-        }
+        };
         
         $scope.deleteMulti = function(multi){
             let index = $scope.multis.indexOf(multi);
             $scope.multis.splice(index, 1);
             $scope.updateStorage();
-        }
+        };
+        
+        //Filter Functions -----------------------------------------------------
+        $scope.addFilterUnwanted = function(){
+            $scope.filterUnwanted.push('New');
+        };
+        
+        $scope.deleteFilterUnwanted = function(filter){
+            let index = $scope.filterUnwanted.indexOf(filter);
+            $scope.filterUnwanted.splice(index, 1);
+            $scope.updateStorage();
+        };
+        
+        $scope.editFilterUnwantedName = function(filter, event){
+            let newValue = event.currentTarget.value;
+            let index = $scope.filterUnwanted.indexOf(filter);
+            if (newValue.length === 0) newValue = 'Empty';
+            $scope.filterUnwanted[index] = newValue;
+            $scope.updateStorage();
+        };
+        
+        $scope.addFilterWanted = function(){
+            $scope.filterWanted.push('New');
+        };
+        
+        $scope.deleteFilterWanted = function(filter){
+            let index = $scope.filterWanted.indexOf(filter);
+            $scope.filterWanted.splice(index, 1);
+            $scope.updateStorage();
+        };
+        
+        $scope.editFilterWantedName = function(filter, event){
+            let newValue = event.currentTarget.value;
+            let index = $scope.filterWanted.indexOf(filter);
+            if (newValue.length === 0) newValue = 'Empty';
+            $scope.filterWanted[index] = newValue;
+            $scope.updateStorage();
+        };
         
         //Various other functions ----------------------------------------------
         
@@ -160,7 +215,7 @@
                 $scope.clickedOn.push(thread.id);
                 localStorage.setItem('clicked', $scope.clickedOn.join(','));
             }
-        }
+        };
         
         //return number of new items
         $scope.newItems = function(){
@@ -169,47 +224,50 @@
                 return newItems.length;
             }
             return 0;
-        }
+        };
         
         $scope.markAllRead = function(){
             $scope.currentThreads.forEach((thread) => $scope.removeColour(thread));
-        }
+        };
         
         //Comment functions ----------------------------------------------------
         
         //open modal view with comments
         $scope.showComments = function(thread){
             let url = "http://www.reddit.com/r/"+thread.sub+"/"+thread.id+".json";
+            
+            $('#commentTitle').html("<span class='sub'>"+thread.sub+"</span> - "+thread.title+"<br>"+"<h4 class='sub'>"+thread.author+"</h4>");
+            let text_html = $.parseHTML(thread.description_html);
+            //check if thread contains text or media and parse
+            let hasMedia = false;
+            if (text_html) {
+                text_html = text_html[0].data;
+            } else {
+                if (thread.media.content !== undefined){
+                    text_html = $.parseHTML(thread.media.content)[0].data;
+                    hasMedia = true;
+                } else {
+                    text_html = '';
+                }
+            }
+            $('#threadBody').html(text_html);
+            if (hasMedia) $('#threadBody').addClass('centered');
+            else $('#threadBody').removeClass('centered');
+            $('#commentModal').modal({
+                centered: false,
+                onHide: function(){
+                    $('#threadBody').html('');
+                },
+            }).modal('show');
+            
             $.get(url, function(data){
                 let comments = data[1].data.children;
                 $('#comments').html("");
                 //top level comments
                 addComments(comments, '#comments');
-                $('#commentTitle').html("<span class='sub'>"+thread.sub+"</span> - "+thread.title+"<br>"+"<h4 class='sub'>"+thread.author+"</h4>");
-                let text_html = $.parseHTML(thread.description_html);
-                //check if thread contains text or media and parse
-                let hasMedia = false;
-                if (text_html) {
-                    text_html = text_html[0].data;
-                } else {
-                    if (thread.media.content !== undefined){
-                        text_html = $.parseHTML(thread.media.content)[0].data;
-                        hasMedia = true;
-                    } else {
-                        text_html = '';
-                    }
-                }
-                $('#threadBody').html(text_html);
-                if (hasMedia) $('#threadBody').addClass('centered');
-                else $('#threadBody').removeClass('centered');
-                $('#commentModal').modal({
-                    centered: false,
-                    onHide: function(){
-                        $('#threadBody').html('');
-                    },
-                }).modal('show');
+                
             });
-        }
+        };
         
         //recursive function that goes through comment children and adds them to the comment div
         function addLowerComments(upperComment, div){
@@ -224,10 +282,13 @@
         function addComments(comments, div){
             comments.sort((a,b) => b.data.created - a.data.created);
             comments.forEach((comment) => {
+                if (comment.kind === 'more') return;
                 let data = comment.data;
                 let text = data.body_html;
                 let author = data.author;
-                let html = $.parseHTML(text)[0].data;
+                let html = $.parseHTML(text);
+                if (html) html = html[0].data;
+                else html = '';
                 let commentDiv = $('<div class="ui segment" id="comment">').html(html).appendTo(div);
                 
                 let commentHeader = $('<h4 class="sub">').prependTo(commentDiv);
@@ -250,9 +311,16 @@
         
         //get new data from reddit in JSON format
         function getNewData(limit){
+            //if users hibernates or loses internet etc, then when they try again, use the high limit
+            let secondTime = new Date();
+            if (secondTime - firstTime > 20000) limit = 75;
+            
             if ($scope.subs.length === 0) return;
             let currentSubs = $scope.subs;
             $.getJSON('https://www.reddit.com/r/'+$scope.subs+'/new.json?limit='+limit,function(data){
+                //only record time when successful
+                firstTime = new Date();
+                
                 //just in case user switches while gathering new list of threads
                 if ($scope.subs !== currentSubs) return;
                 //threads is within data.children (array)
@@ -262,6 +330,23 @@
                 //for each thread, get desired data and create an object
                 threads.forEach((thread) => {
                     let data = thread.data;
+                    //check for any unwanted filters, and skip if found
+                    let skip = false;
+                    $scope.filterUnwanted.forEach((filter) => {
+                        let regEx = new RegExp(filter,'i');
+                        if (regEx.test(data.title)){
+                            skip = true;
+                        }
+                    });
+                    //check for any wanted filters (shows only when there's a match)
+                    $scope.filterWanted.forEach((filter) => {
+                        let regEx = new RegExp(filter,'i');
+                        if (regEx.test(data.title) === false){
+                            skip = true;
+                        }
+                    });
+                    if (skip) return;
+                    
                     //console.log(data);
                     let obj = {
                         id: data.id,
