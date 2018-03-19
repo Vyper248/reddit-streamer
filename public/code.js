@@ -253,6 +253,8 @@
             $('#threadBody').html(text_html);
             if (hasMedia) $('#threadBody').addClass('centered');
             else $('#threadBody').removeClass('centered');
+            
+            $('#comments').html('<div class="ui active centered inline loader"></div>');
             $('#commentModal').modal({
                 centered: false,
                 onHide: function(){
@@ -262,10 +264,9 @@
             
             $.get(url, function(data){
                 let comments = data[1].data.children;
-                $('#comments').html("");
+                $('#comments').html('');
                 //top level comments
                 addComments(comments, '#comments');
-                
             });
         };
         
