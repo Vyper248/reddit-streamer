@@ -11,6 +11,8 @@
 
 	<div class="ui fixed menu">
 		<a class="left item" id="markReadBtn" ng-click="markAllRead()"><i class="thumbs up icon"></i></a>
+		<a class="left item" id="switchSortBtn" ng-click="switchType()" ng-if="sortType == '/hot'"><i class="hotjar icon"></i></a>
+		<a class="left item" id="switchSortBtn" ng-click="switchType()" ng-if="sortType == '/new'"><i class="calendar alternate icon"></i></a>
 		<div class="centered menu">
 			<a class="item" ng-click="selectMulti('All')" ng-style="checkMulti('All')">All</a>
 			<a class="item" ng-repeat="multi in multis track by $index" ng-click="selectMulti(multi.name)" ng-style="checkMulti(multi.name)">{{multi.name}}</a>

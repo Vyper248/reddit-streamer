@@ -35,6 +35,9 @@
         //variable linked to sub search input
         $scope.searchText = '';
         
+        //variable to switch between new or hot etc
+        $scope.sortType = '/new';
+        
         //array to store threads
         $scope.currentThreads = [];
         $scope.mute = true;
@@ -230,6 +233,12 @@
             $scope.currentThreads.forEach((thread) => $scope.removeColour(thread));
         };
         
+        $scope.switchType = function(){
+            $scope.sortType === '/new' ? $scope.sortType = '/hot' : $scope.sortType = '/new';
+            $scope.currentThreads = [];
+            getNewData(75);
+        }
+        
         //Comment functions ----------------------------------------------------
         
         //open modal view with comments
@@ -318,7 +327,7 @@
             
             if ($scope.subs.length === 0) return;
             let currentSubs = $scope.subs;
-            $.getJSON('https://www.reddit.com/r/'+$scope.subs+'/new.json?limit='+limit,function(data){
+            $.getJSON('https://www.reddit.com/r/'+$scope.subs+$scope.sortType+'.json?limit='+limit,function(data){
                 //only record time when successful
                 firstTime = new Date();
                 
@@ -329,7 +338,7 @@
                 let threads = data.data.children;
                 
                 //for each thread, get desired data and create an object
-                threads.forEach((thread) => {
+                threads.forEachReverse((thread) => {
                     let data = thread.data;
                     //check for any unwanted filters, and skip if found
                     let skip = false;
@@ -365,8 +374,7 @@
                         colour: 'red'
                     };
                     if ($scope.clickedOn.indexOf(obj.id) !== -1) obj.colour = '';
-                    if (checkExists(obj) === false){
-                        //console.log(obj, " doesn't exist");
+                    if (checkExists(obj.id) === false){
                         $scope.currentThreads.unshift(obj);
                         if ($scope.currentThreads.length > 75) $scope.currentThreads.pop();
                         addedNew = true;
@@ -378,9 +386,8 @@
                     }
                 });
                 
-                //if found a new thread, then sort array, play a sound and update Angular
+                //if found a new thread, play a sound and update Angular
                 if (addedNew){
-                    $scope.currentThreads.sort((a,b) => b.created - a.created);
                     $scope.$apply();
                     if ($scope.mute === false){
                         sound.play();
@@ -392,9 +399,9 @@
         }
         
         //check if a thread already exists in the array
-        function checkExists(obj){
+        function checkExists(id){
             let exists = false;
-            let test = $scope.currentThreads.find((thread) => thread.id == obj.id);
+            let test = $scope.currentThreads.find((thread) => thread.id == id);
             if (test !== undefined) exists = true;
             return exists;
         }
@@ -406,3 +413,10 @@
         else $(e).text('[-] ');
         $(e).parent().parent().toggleClass('closed');
     }
+    
+    //custom Array function to run forEach in reverse
+    Array.prototype.forEachReverse = function(func){
+        for (let i = this.length-1; i >= 0; i--){
+            func(this[i], i);
+        }
+    };

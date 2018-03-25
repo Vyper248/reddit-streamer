@@ -114,3 +114,8 @@ body {
     position: absolute;
     left: 0px;
 }
+
+#switchSortBtn {
+    position: absolute;
+    left: 54px;
+}
