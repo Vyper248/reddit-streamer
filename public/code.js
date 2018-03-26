@@ -210,12 +210,13 @@
         };
         
         //Various other functions ----------------------------------------------
-        
+
         //remove red outline when user clicks on a thread
         $scope.removeColour = function(thread){
             if (thread.colour !== ''){
                 thread.colour = '';
                 $scope.clickedOn.push(thread.id);
+                if ($scope.clickedOn.length > 3000) $scope.clickedOn.shift();
                 localStorage.setItem('clicked', $scope.clickedOn.join(','));
             }
         };
@@ -236,6 +237,7 @@
         $scope.switchType = function(){
             $scope.sortType === '/new' ? $scope.sortType = '/hot' : $scope.sortType = '/new';
             $scope.currentThreads = [];
+            $scope.threadCache = {};
             getNewData(75);
         }
         
