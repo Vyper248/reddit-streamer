@@ -6,7 +6,7 @@
     $('.tabular.menu .item').tab();
     
     var app = angular.module('redditApp', []);
-    app.controller('myCtrl', function($scope) {  
+    app.controller('myCtrl', function($scope, $sce) {  
         
         //setup variables----------------------------------------
         
@@ -52,6 +52,13 @@
         if ($scope.filterWanted === undefined) $scope.filterWanted = '[]';
         $scope.filterWanted = JSON.parse($scope.filterWanted);
         
+        //string of filters for monitored comments (used for moderating)
+        $scope.commentFilters = localStorage.commentFilters;
+        if ($scope.commentFilters === undefined) $scope.commentFilters = '';
+        
+        $scope.onlyComments = false;
+        $scope.commentArray = [];
+        
         //variable to keep track of how much time has passed since last update
         let firstTime = new Date();
         
@@ -64,6 +71,7 @@
             localStorage.setItem('currentMulti', $scope.currentMulti);
             localStorage.setItem('filterUnwanted', JSON.stringify($scope.filterUnwanted));
             localStorage.setItem('filterWanted', JSON.stringify($scope.filterWanted));
+            localStorage.setItem('commentFilters', $scope.commentFilters);
         };
         
         //Adding and removing Subs ---------------------------------------------
@@ -127,6 +135,7 @@
 
         //when user selects a multi, switch current sub array to that one
         $scope.selectMulti = function(multi){
+            $scope.commentArray = [];
             $scope.threadCache[$scope.currentMulti] = $scope.currentThreads;
             if (multi === 'All') {
                 $scope.subArray = [];
@@ -209,7 +218,28 @@
             $scope.updateStorage();
         };
         
+        $scope.changeCommentFilters = function(){
+            $scope.updateStorage();
+        }
+        
+        $scope.enableCommentsOnly = function(){
+            $scope.commentArray = [];
+            if ($scope.onlyComments) {
+                $scope.onlyComments = false;
+                resetInterval();
+            } else {
+                $scope.onlyComments = true;
+                clearInterval(interval);
+            }
+            getNewData(75);
+        }
+        
         //Various other functions ----------------------------------------------
+        
+        //function to convert text to html
+        $scope.toTrustedHTML = function( html ){
+            return $sce.trustAsHtml( html );
+        }
 
         //remove red outline when user clicks on a thread
         $scope.removeColour = function(thread){
@@ -223,6 +253,8 @@
         
         //return number of new items
         $scope.newItems = function(){
+            if ($scope.onlyComments) return $scope.commentArray.length;
+            
             let newItems = $scope.currentThreads.filter((thread) => thread.colour !== '');
             if (newItems !== undefined) {
                 return newItems.length;
@@ -238,6 +270,7 @@
             $scope.sortType === '/new' ? $scope.sortType = '/hot' : $scope.sortType = '/new';
             $scope.currentThreads = [];
             $scope.threadCache = {};
+            resetInterval();
             getNewData(75);
         }
         
@@ -313,10 +346,10 @@
 
         //functions for getting new thread data from Reddit --------------------
         
-        //set interval for getting new data, currently every second
-        setInterval(()=>{
+        //set interval for getting new data, currently every 10 seconds
+        let interval = setInterval(()=>{
             getNewData(10);
-        }, 5000);
+        }, 10000);
         
         //Initial gather
         getNewData(75);
@@ -328,13 +361,65 @@
             if (secondTime - firstTime > 20000) limit = 75;
             
             if ($scope.subs.length === 0) return;
+            
+            if ($scope.onlyComments) {
+                getComments(1);
+            } else {
+                getPosts(limit);
+            }
+        }
+        
+        function getComments(number, after=''){
+            $scope.currentThreads = [];
+            let currentSubs = $scope.subs;
+            let extra = '';
+            if (number > 1) extra = '&after='+after;
+            $.getJSON('https://www.reddit.com/r/'+$scope.subs+'/comments.json?limit=100'+extra,function(data){
+                //only record time when successful
+                firstTime = new Date();
+                
+                //just in case user switches while gathering new list of threads
+                if ($scope.subs !== currentSubs || !$scope.onlyComments) return;
+                
+                let comments = data.data.children;
+                let commentFilters = $scope.commentFilters.split(',');
+                comments.forEach(comment => {
+                    let body_text = comment.data.body;
+                    let body = $.parseHTML(comment.data.body_html)[0].data;
+                    let match = false;
+                    
+                    commentFilters.forEach(filter => {
+                        let regex = new RegExp(filter, 'gi');
+                        if (regex.test(body_text)){
+                            body = body.replace(regex, '<strong style="color:blue">'+filter+'</strong>');
+                            match = true;
+                        }
+                    });
+                    
+                    if (match){
+                        let author = comment.data.author;
+                        let link_title = comment.data.link_title;
+                        let permalink = comment.data.permalink;
+                        $scope.commentArray.push({body, author, link_title, permalink});
+                    }
+                });
+                $scope.$apply();
+                
+                if (number < 10 && $scope.onlyComments){
+                    getComments(number+1, data.data.after);
+                }
+            });
+        }
+        
+        function getPosts(limit){
             let currentSubs = $scope.subs;
             $.getJSON('https://www.reddit.com/r/'+$scope.subs+$scope.sortType+'.json?limit='+limit,function(data){
                 //only record time when successful
                 firstTime = new Date();
                 
                 //just in case user switches while gathering new list of threads
-                if ($scope.subs !== currentSubs) return;
+                if ($scope.subs !== currentSubs || $scope.onlyComments) return;
+                
                 //threads is within data.children (array)
                 let addedNew = false;
                 let threads = data.data.children;
@@ -406,6 +491,14 @@
             let test = $scope.currentThreads.find((thread) => thread.id == id);
             if (test !== undefined) exists = true;
             return exists;
+        }
+        
+        //reset interval to start again
+        function resetInterval(){
+            clearInterval(interval);
+            interval = setInterval(()=>{
+                getNewData(10);
+            }, 10000);
         }
     });
     

@@ -18,6 +18,8 @@
 			<a class="item" ng-repeat="multi in multis track by $index" ng-click="selectMulti(multi.name)" ng-style="checkMulti(multi.name)">{{multi.name}}</a>
 			
 		</div>
+		<a class="right item" id="commentsOnlyBtn" ng-click="enableCommentsOnly()" ng-if="onlyComments"><i class="edit icon"></i></a>
+		<a class="right item" id="commentsOnlyBtn" ng-click="enableCommentsOnly()" ng-if="!onlyComments"><i class="file alternate icon"></i></a>
 		<a class="right item" id="editMultiBtn" ng-click="editMultis()"><i class="cog icon"></i></a>
 	</div>
 
@@ -70,11 +72,21 @@
                     <span class="sub">{{thread.sub}}</span> - {{thread.title}}
                 </a>
             </h4>
-            <p class="sub">{{thread.domain}} - {{thread.author}}</p>
+            <p class="sub" ng-if="thread.domain !== 'youtube.com' && thread.domain !== 'youtu.be'">{{thread.domain}} - {{thread.author}}</p>
+            <p class="sub" ng-if="thread.domain == 'youtube.com' || thread.domain == 'youtu.be'"><span class="sub-blue">{{thread.domain}}</span> - {{thread.author}}</p>
             <p>{{thread.description}}</p>
             <a  target="_blank" class="sub pointer" ng-click="showComments(thread)">{{thread.numberComments}} Comments</a> - 
             <a href="http://www.reddit.com{{thread.comments}}" target="_blank" class="sub">Open on Reddit</a>
         </div>
+		
+		<div class="threadContainer ui left aligned segment" ng-repeat="comment in commentArray" ng-if="onlyComments">
+            <h4>
+                {{comment.author}} - <span class="sub">{{comment.link_title}}</span>
+            </h4>
+			<p ng-bind-html="toTrustedHTML(comment.body)"></p>
+            <a href="http://www.reddit.com{{comment.permalink}}" target="_blank" class="sub">Open on Reddit</a>
+        </div>
+		<div ng-if="onlyComments && commentArray.length == 0">No comments matching filters.</div>
         
 		
 		<div class="ui longer special modal" id="commentModal">
@@ -93,7 +105,7 @@
 			</div>
 		</div>
 		
-		<div class="ui longer special tiny modal" id="multiModal">
+		<div class="ui longer special small modal" id="multiModal">
 			<div class="header">Menu</div>
 			<div class="scrolling content" id="multis">
 				
@@ -101,6 +113,7 @@
 					<a class="active item" data-tab="first">Groups</a>
 					<a class="item" data-tab="second">Filter Unwanted</a>
 					<a class="item" data-tab="third">Filter Wanted</a>
+					<a class="item" data-tab="fourth">Comment Monitor</a>
 				</div>
 				
 				<div class="ui bottom attached active tab segment" data-tab="first">
@@ -141,6 +154,16 @@
 						<div class="ui segment" ng-if="filterWanted.length == 0">No Filters Added</div>
 					</div>
 					<div class="ui blue button" ng-click="addFilterWanted()">Add New</div>
+				</div>
+				
+				<div class="ui bottom attached tab segment" data-tab="fourth">
+					<p>Only monitored comments containing words added here will be displayed.</p>
+					<div class="ui form">
+						<div class="field">
+							<label>Text</label>
+							<textarea ng-model="commentFilters" ng-blur="changeCommentFilters()"></textarea>
+						</div>
+					</div>
 				</div>
 				
 			</div>

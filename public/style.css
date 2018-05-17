@@ -13,6 +13,10 @@ body {
     color: darkgray;
 }
 
+.sub-blue {
+    color: blue;
+}
+
 .threadCount {
     color: darkgray;
     margin: 0px;
@@ -108,6 +112,11 @@ body {
 #editMultiBtn {
     position: absolute;
     right: 0px;
+}
+
+#commentsOnlyBtn {
+    position: absolute;
+    right: 54px;
 }
 
 #markReadBtn {
